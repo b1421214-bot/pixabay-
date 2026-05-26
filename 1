@@ -1,0 +1,54 @@
+import requests
+import os
+import time
+
+# --- 設定區 ---
+API_KEY = '你的API_KEY填在這裡'
+KEYWORD = 'apple fruit'
+TOTAL_IMAGES_NEEDED = 500
+SAVE_FOLDER = 'apple_images'
+
+if not os.path.exists(SAVE_FOLDER):
+    os.makedirs(SAVE_FOLDER)
+
+def download_images():
+    count = 0
+    page = 1
+    
+    while count < TOTAL_IMAGES_NEEDED:
+        # Pixabay API 每頁最多支援 200 張
+        url = f"https://pixabay.com/api/?key={API_KEY}&q={KEYWORD}&image_type=photo&per_page=200&page={page}"
+        
+        response = requests.get(url)
+        data = response.json()
+        
+        hits = data.get('hits', [])
+        if not hits:
+            print("沒有更多圖片了。")
+            break
+            
+        for img in hits:
+            if count >= TOTAL_IMAGES_NEEDED:
+                break
+                
+            img_url = img['largeImageURL'] # 獲取高品質圖片網址
+            img_ext = img_url.split('.')[-1]
+            img_data = requests.get(img_url).content
+            
+            # 儲存檔案
+            file_path = os.path.join(SAVE_FOLDER, f"apple_{count+1}.{img_ext}")
+            with open(file_path, 'wb') as f:
+                f.write(img_data)
+            
+            count += 1
+            print(f"已下載第 {count} 張: {file_path}")
+            
+            # 稍微停頓避免請求過快被封鎖
+            time.sleep(0.1)
+            
+        page += 1
+
+    print(f"\n✅ 下載完成！總共儲存了 {count} 張照片於 {SAVE_FOLDER} 資料夾中。")
+
+if __name__ == "__main__":
+    download_images()
